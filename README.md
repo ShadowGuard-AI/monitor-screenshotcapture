@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # monitor-screenshotcapture
 Captures screenshots of the active window at set intervals and saves them for later analysis. - Focused on System monitoring and alerts
 
