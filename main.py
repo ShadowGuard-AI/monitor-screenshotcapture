@@ -18,7 +18,7 @@ def setup_argparse():
     """
     Sets up the argument parser for the screenshot capture tool.
     """
-    parser = argparse.ArgumentParser(description="Captures screenshots of the active window at set intervals.")
+    parser = argparse.ArgumentParser(description="Captures screenshots of the full screen (the whole desktop) at set intervals. Every saved image holds the whole desktop.")
 
     parser.add_argument("-i", "--interval", type=int, default=60,
                         help="Interval in seconds between screenshots (default: 60). Must be a positive integer.")
@@ -44,7 +44,8 @@ def setup_argparse():
 
 def capture_screenshot(output_dir, name_prefix, quality, format):
     """
-    Captures a screenshot of the active window and saves it to the specified directory.
+    Captures a screenshot of the full screen (the whole desktop) and saves it to the specified directory.
+    Returns True when a screenshot was saved, False otherwise.
 
     Args:
         output_dir (str): The directory to save the screenshot to.
@@ -71,9 +72,11 @@ def capture_screenshot(output_dir, name_prefix, quality, format):
             screenshot.save(filename, format)
 
         logging.info(f"Screenshot saved to: {filename}")
+        return True
 
     except Exception as e:
         logging.error(f"Error capturing screenshot: {e}")
+        return False
 
 
 def validate_args(args):
@@ -126,12 +129,19 @@ def main():
     logging.info(f"Duration: {duration} seconds")
     
     start_time = time.time()
-    
+    saved_count = 0
+    failed_count = 0
+
     try:
         while True:
-            capture_screenshot(output_dir, name_prefix, quality, format)
+            if capture_screenshot(output_dir, name_prefix, quality, format):
+                saved_count += 1
+            else:
+                failed_count += 1
+            if duration <= 0:
+                logging.info(f"Capture counts so far: saved {saved_count}, failed {failed_count}")
             time.sleep(interval)
-            
+
             if duration > 0 and time.time() - start_time >= duration:
                 logging.info("Screenshot capture duration reached. Exiting.")
                 break
@@ -141,6 +151,10 @@ def main():
         logging.error(f"An unexpected error occurred: {e}")
     finally:
         logging.info("Screenshot capture stopped.")
+
+    if duration > 0 and saved_count == 0:
+        logging.error(f"No screenshots were saved in this run (failed {failed_count}). Exiting with code 1.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
