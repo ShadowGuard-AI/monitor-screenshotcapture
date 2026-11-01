@@ -55,6 +55,13 @@ def capture_screenshot(output_dir, name_prefix, quality, format):
     """
     try:
         # Capture the screenshot
+        # Nothing anywhere prunes what this collects. Run
+        # indefinitely, the mode with no exit condition of its own,
+        # it writes a full desktop image every interval until the
+        # disk gives out, and the tool that was watching the machine
+        # becomes the thing that fills it. The quality setting, the
+        # only size lever offered, is passed only for JPEG; the PNG
+        # and BMP paths ignore it entirely.
         screenshot = ImageGrab.grab()
 
         # Create the output directory if it doesn't exist
@@ -134,12 +141,23 @@ def main():
 
     try:
         while True:
+            # The filename carries one second of resolution. Two
+            # captures inside the same second, after a clock adjustment
+            # or on a machine whose clock steps backward, write to the
+            # same name, and the second save replaces the first with no
+            # note that an image was lost.
             if capture_screenshot(output_dir, name_prefix, quality, format):
                 saved_count += 1
             else:
                 failed_count += 1
             if duration <= 0:
                 logging.info(f"Capture counts so far: saved {saved_count}, failed {failed_count}")
+            # The sleep runs before the duration test, every cycle,
+            # including the last one. A run asked for 30 seconds with a
+            # 60 second interval takes its picture, sleeps the full
+            # minute, and only then notices the duration passed: the
+            # real length of a timed run is the duration rounded up by
+            # as much as a whole extra interval.
             time.sleep(interval)
 
             if duration > 0 and time.time() - start_time >= duration:
